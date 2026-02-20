@@ -62,7 +62,7 @@ const Hero = ({ scrollToSection }) => {
           {/* Main title */}
           <h1
             ref={titleRef}
-            className="font-audiowide text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl text-white mb-2 tracking-wider"
+            className="font-audiowide text-3xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl text-white mb-2 tracking-wide break-words leading-tight px-2 max-w-full"
             style={{ textShadow: '0 0 40px rgba(124, 58, 237, 0.5)' }}
             data-testid="hero-title"
           >

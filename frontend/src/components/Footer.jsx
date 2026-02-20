@@ -23,7 +23,7 @@ const Footer = () => {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            src="/chakravyuha-logo.png"
+            src="https://pda-uploads.s3.ap-south-1.amazonaws.com/posters/1705fb71f27a44a58ae906bb9a24672b.webp"
             alt="Chakravyuha 26"
             className="h-12 mb-4"
           />

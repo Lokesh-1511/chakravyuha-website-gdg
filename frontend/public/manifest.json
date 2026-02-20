@@ -1,8 +1,16 @@
 {
-  "short_name": "Synsara'23",
-  "name": "A culmination of the nation's best young minds in a contest of innovative thinking and exhilarating creations. Get ready to tough it out against competition on September 30.",
-  "start_url": ".",
+  "short_name": "CHAKRAVYUHA",
+  "name": "CHAKRAVYUHA '26",
+  "description": "A culmination of the nation's best young minds in a contest of innovative thinking and exhilarating creations.",
+  "start_url": "/",
   "display": "standalone",
   "theme_color": "#000000",
-  "background_color": "#ffffff"
+  "background_color": "#050505",
+  "icons": [
+    {
+      "src": "https://pda-uploads.s3.ap-south-1.amazonaws.com/posters/1705fb71f27a44a58ae906bb9a24672b.webp",
+      "sizes": "512x512",
+      "type": "image/webp"
+    }
+  ]
 }

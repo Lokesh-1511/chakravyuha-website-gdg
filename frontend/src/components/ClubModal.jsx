@@ -149,7 +149,7 @@ const EventCard = ({ event }) => {
                 <img
                   src={event.poster_url}
                   alt={event.title}
-                  className="w-full aspect-[1/2] object-cover rounded-lg border border-white/10"
+                  className="w-full aspect-[5/4] object-contain rounded-lg border border-white/10 bg-black/30"
                 />
               )}
 
@@ -267,7 +267,7 @@ const ClubModal = ({ club, isOpen, onClose, events, eventsLoading, eventsError, 
             <div className="relative p-6 pb-4 border-b border-white/10">
               <div className="flex items-center gap-4">
                 <img
-                  src={club.clubImage || '/chakravyuha-logo.png'}
+                  src={club.clubImage || 'https://pda-uploads.s3.ap-south-1.amazonaws.com/posters/1705fb71f27a44a58ae906bb9a24672b.webp'}
                   alt={club.clubName}
                   className="w-16 h-16 rounded-xl object-contain bg-white/10 p-2"
                 />
