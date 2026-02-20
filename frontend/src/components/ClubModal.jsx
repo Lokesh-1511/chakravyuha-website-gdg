@@ -149,7 +149,7 @@ const EventCard = ({ event }) => {
                 <img
                   src={event.poster_url}
                   alt={event.title}
-                  className="w-full aspect-[4/5] object-cover rounded-lg border border-white/10"
+                  className="w-full aspect-[1/2] object-cover rounded-lg border border-white/10"
                 />
               )}
 
