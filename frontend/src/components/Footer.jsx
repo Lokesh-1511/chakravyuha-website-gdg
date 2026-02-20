@@ -25,7 +25,7 @@ const Footer = () => {
             viewport={{ once: true }}
             src="/chakravyuha-logo.png"
             alt="Chakravyuha 26"
-            className="h-12 mb-4"
+            className="h-10 sm:h-12 w-auto max-w-[180px] object-contain mb-4"
           />
 
           {/* Tagline */}

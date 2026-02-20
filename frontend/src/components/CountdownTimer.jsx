@@ -38,7 +38,7 @@ const CountdownTimer = ({ targetDate }) => {
   ];
 
   return (
-    <div className="flex items-center justify-center gap-1 sm:gap-4 max-w-full" data-testid="countdown-timer">
+    <div className="flex items-center justify-center gap-1 sm:gap-4 max-w-full px-1" data-testid="countdown-timer">
       {timeUnits.map((unit, index) => (
         <React.Fragment key={unit.label}>
           <motion.div
@@ -49,21 +49,21 @@ const CountdownTimer = ({ targetDate }) => {
           >
             <div className="relative">
               <div 
-                className="w-14 h-14 sm:w-20 sm:h-20 md:w-24 md:h-24 flex items-center justify-center rounded-xl glass border border-purple-500/30"
+                className="w-12 h-12 sm:w-20 sm:h-20 md:w-24 md:h-24 flex items-center justify-center rounded-xl glass border border-purple-500/30"
                 style={{ boxShadow: '0 0 20px rgba(124, 58, 237, 0.2)' }}
               >
                 <motion.span
                   key={unit.value}
                   initial={{ y: -20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
-                  className="font-audiowide text-xl sm:text-3xl md:text-4xl text-white"
+                  className="font-audiowide text-base sm:text-3xl md:text-4xl text-white tabular-nums min-w-[2ch] text-center"
                 >
                   {String(unit.value).padStart(2, '0')}
                 </motion.span>
               </div>
               <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-3/4 h-1 bg-gradient-to-r from-transparent via-purple-500 to-transparent rounded-full" />
             </div>
-            <span className="mt-2 sm:mt-3 text-[10px] sm:text-xs font-medium tracking-widest text-gray-400">
+            <span className="mt-1.5 sm:mt-3 text-[9px] sm:text-xs font-medium tracking-widest text-gray-400">
               {unit.label}
             </span>
           </motion.div>

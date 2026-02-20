@@ -269,7 +269,7 @@ const ClubModal = ({ club, isOpen, onClose, events, eventsLoading, eventsError, 
                 <img
                   src={club.clubImage || '/chakravyuha-logo.png'}
                   alt={club.clubName}
-                  className="w-16 h-16 rounded-xl object-contain bg-white/10 p-2"
+                  className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl object-contain bg-white/10 p-2 shrink-0"
                 />
                 <div>
                   <h2 className="font-audiowide text-2xl text-white">{club.clubName}</h2>

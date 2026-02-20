@@ -41,11 +41,11 @@ const Hero = ({ scrollToSection }) => {
     <section id="home" className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Gradient overlays */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-purple-600/20 rounded-full blur-[120px]" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-[120px]" />
+        <div className="absolute top-0 left-1/4 w-64 h-64 sm:w-96 sm:h-96 bg-purple-600/20 rounded-full blur-[90px] sm:blur-[120px]" />
+        <div className="absolute bottom-0 right-1/4 w-64 h-64 sm:w-96 sm:h-96 bg-cyan-500/10 rounded-full blur-[90px] sm:blur-[120px]" />
       </div>
 
-      <div className="container-custom relative z-10 py-24 md:py-32">
+      <div className="container-custom relative z-10 py-20 md:py-32">
         <div className="flex flex-col items-center text-center">
           {/* Tagline */}
           <motion.div
@@ -62,7 +62,7 @@ const Hero = ({ scrollToSection }) => {
           {/* Main title */}
           <h1
             ref={titleRef}
-            className="font-audiowide text-3xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl text-white mb-2 tracking-wide break-words leading-tight px-2 max-w-full"
+            className="font-audiowide text-[clamp(1.9rem,9vw,3.6rem)] md:text-6xl lg:text-7xl xl:text-8xl text-white mb-2 tracking-wide break-words leading-tight px-2 max-w-[95vw]"
             style={{ textShadow: '0 0 40px rgba(124, 58, 237, 0.5)' }}
             data-testid="hero-title"
           >
@@ -74,7 +74,7 @@ const Hero = ({ scrollToSection }) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4 }}
-            className="text-lg md:text-xl text-gray-400 mb-8"
+            className="text-base sm:text-lg md:text-xl text-gray-400 mb-8 max-w-[92vw] md:max-w-3xl px-2"
           >
             {hero.subtitle}
           </motion.p>
@@ -94,9 +94,9 @@ const Hero = ({ scrollToSection }) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.6 }}
-            className="mb-8"
+            className="mb-8 max-w-full px-2"
           >
-            <span className="inline-flex items-center gap-2 px-6 py-3 text-sm md:text-base font-audiowide text-white bg-black/40 backdrop-blur-sm rounded-full border border-purple-500/30">
+            <span className="inline-flex flex-wrap justify-center items-center gap-2 px-4 sm:px-6 py-3 text-xs sm:text-sm md:text-base font-audiowide text-white bg-black/40 backdrop-blur-sm rounded-full border border-purple-500/30 max-w-full">
               <Calendar className="w-4 h-4 text-purple-400" />
               {hero.dates}
             </span>
@@ -120,11 +120,11 @@ const Hero = ({ scrollToSection }) => {
           </motion.div>
 
           {/* Stats */}
-          <div ref={statsRef} className="flex flex-wrap items-center justify-center gap-4 md:gap-8 mt-16">
+          <div ref={statsRef} className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 md:gap-8 mt-12 md:mt-16">
             {stats.map(({ icon: Icon, label, value }, index) => (
               <motion.div
                 key={label}
-                className="flex flex-col items-center p-4 md:p-6 rounded-2xl glass min-w-[120px] md:min-w-[140px]"
+                className="flex flex-col items-center p-3 sm:p-4 md:p-6 rounded-2xl glass min-w-[108px] sm:min-w-[120px] md:min-w-[140px]"
                 whileHover={{ scale: 1.05, borderColor: 'rgba(124, 58, 237, 0.5)' }}
                 data-testid={`stat-${label.toLowerCase().replace(' ', '-')}`}
               >
