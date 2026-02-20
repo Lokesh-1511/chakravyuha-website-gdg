@@ -40,7 +40,7 @@ const Header = ({ onNavigate }) => {
           data-testid="logo-btn"
         >
           <img
-            src="https://pda-uploads.s3.ap-south-1.amazonaws.com/posters/1705fb71f27a44a58ae906bb9a24672b.webp"
+            src="/chakravyuha-logo.png"
             alt="Chakravyuha 26"
             className="h-10 md:h-12"
           />
