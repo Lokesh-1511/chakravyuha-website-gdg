@@ -20,6 +20,11 @@
     "sectionId": "passes"
   },
   {
+    "id": "accomodation",
+    "title": "Accomodation",
+    "sectionId": "services"
+  },
+  {
     "id": "gallery",
     "title": "Gallery",
     "sectionId": "gallery"

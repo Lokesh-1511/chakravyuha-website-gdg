@@ -62,7 +62,7 @@ const Services = () => {
         >
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div className="space-y-2">
-              <h3 className="text-base md:text-lg font-semibold text-white">Need help with services?</h3>
+              <h3 className="text-base md:text-lg font-semibold text-white">Need help with Accomodation</h3>
               <p className="flex items-center gap-2 text-sm text-gray-300">
                 <User className="w-4 h-4 text-purple-300" />
                 {enquiryName}
