@@ -66,7 +66,31 @@ const ClubsSection = () => {
     fetchEvents();
   }, [fetchClubs, fetchEvents]);
 
+  const getClubWebsiteUrl = useCallback((club) => {
+    const rawUrl = [
+      club?.clubUrl,
+      club?.clubURL,
+      club?.clubWebsite,
+      club?.clubLink,
+      club?.websiteUrl,
+      club?.website,
+      club?.url
+    ].find((value) => typeof value === 'string' && value.trim() !== '');
+
+    if (!rawUrl) return '';
+
+    const normalizedUrl = rawUrl.trim();
+    if (/^https?:\/\//i.test(normalizedUrl)) return normalizedUrl;
+    return `https://${normalizedUrl}`;
+  }, []);
+
   const handleClubClick = (club) => {
+    const clubWebsiteUrl = getClubWebsiteUrl(club);
+    if (clubWebsiteUrl) {
+      window.location.assign(clubWebsiteUrl);
+      return;
+    }
+
     setSelectedClub(club);
     setModalOpen(true);
   };
@@ -103,14 +127,22 @@ const ClubsSection = () => {
   }, [clubs]);
 
   const dateFilterOptions = useMemo(() => {
-    const uniqueDates = Array.from(
-      new Set(
-        (events || [])
-          .map((event) => event.dateLabel)
-          .filter((dateLabel) => typeof dateLabel === 'string' && dateLabel.trim() !== '')
-      )
-    );
-    return uniqueDates.sort((a, b) => a.localeCompare(b));
+    const map = new Map();
+
+    (events || []).forEach((event) => {
+      const label = event.dateLabel;
+      if (typeof label !== 'string' || label.trim() === '') return;
+
+      const startDate = event.start_date ? new Date(`${event.start_date}T00:00:00`).getTime() : Number.MAX_SAFE_INTEGER;
+      const existing = map.get(label);
+      if (!existing || startDate < existing.sortKey) {
+        map.set(label, { label, sortKey: Number.isNaN(startDate) ? Number.MAX_SAFE_INTEGER : startDate });
+      }
+    });
+
+    return Array.from(map.values())
+      .sort((a, b) => a.sortKey - b.sortKey || a.label.localeCompare(b.label))
+      .map((item) => item.label);
   }, [events]);
 
   const filteredEvents = useMemo(() => {
@@ -138,6 +170,13 @@ const ClubsSection = () => {
     setExpandedEventKey(null);
     setOpenFilterMenu(null);
     setPosterLightbox(null);
+  };
+
+  const clearFilters = () => {
+    setSelectedEventType('ALL');
+    setSelectedClubFilter('ALL');
+    setSelectedDateFilter('ALL');
+    setOpenFilterMenu(null);
   };
 
   useEffect(() => {
@@ -207,42 +246,45 @@ const ClubsSection = () => {
           {!loading && !eventsLoading && !error && !eventsError && (
             <>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-                {clubsWithEvents.map((club, index) => (
-                  <motion.div
-                    key={club.clubId}
-                    initial={{ opacity: 0, y: 30 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                    viewport={{ once: true }}
-                  >
-                    <GlassCard
-                      onClick={() => handleClubClick(club)}
-                      className="p-4 md:p-6 h-full"
-                      glow
-                      testId={`club-card-${club.clubId}`}
+                {clubsWithEvents.map((club, index) => {
+                  const clubWebsiteUrl = getClubWebsiteUrl(club);
+                  return (
+                    <motion.div
+                      key={club.clubId}
+                      initial={{ opacity: 0, y: 30 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                      viewport={{ once: true }}
                     >
-                      <div className="flex flex-col items-center text-center">
-                        <div className="relative w-16 h-16 md:w-20 md:h-20 mb-4">
-                          <img
-                            src={club.clubImage}
-                            alt={club.clubName}
-                            className="w-full h-full object-contain rounded-xl bg-white/5 p-2"
-                          />
-                          <div className="absolute inset-0 rounded-xl bg-purple-500/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <GlassCard
+                        onClick={() => handleClubClick(club)}
+                        className="p-4 md:p-6 h-full"
+                        glow
+                        testId={`club-card-${club.clubId}`}
+                      >
+                        <div className="flex flex-col items-center text-center">
+                          <div className="relative w-16 h-16 md:w-20 md:h-20 mb-4">
+                            <img
+                              src={club.clubImage}
+                              alt={club.clubName}
+                              className="w-full h-full object-contain rounded-xl bg-white/5 p-2"
+                            />
+                            <div className="absolute inset-0 rounded-xl bg-purple-500/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </div>
+                          <h3 className="font-semibold text-white text-sm md:text-base mb-1 line-clamp-1">
+                            {club.clubName}
+                          </h3>
+                          <p className="text-xs text-gray-400 line-clamp-2 hidden sm:block">
+                            {club.clubTagline}
+                          </p>
+                          <span className="mt-3 px-3 py-1 text-xs text-purple-300 bg-purple-500/20 rounded-full">
+                            {clubWebsiteUrl ? 'Visit Website' : 'View Events'}
+                          </span>
                         </div>
-                        <h3 className="font-semibold text-white text-sm md:text-base mb-1 line-clamp-1">
-                          {club.clubName}
-                        </h3>
-                        <p className="text-xs text-gray-400 line-clamp-2 hidden sm:block">
-                          {club.clubTagline}
-                        </p>
-                        <span className="mt-3 px-3 py-1 text-xs text-purple-300 bg-purple-500/20 rounded-full">
-                          View Events
-                        </span>
-                      </div>
-                    </GlassCard>
-                  </motion.div>
-                ))}
+                      </GlassCard>
+                    </motion.div>
+                  );
+                })}
               </div>
 
               {clubsWithEvents.length === 0 && (
@@ -306,15 +348,24 @@ const ClubsSection = () => {
                   <div>
                     <h3 className="text-xl md:text-2xl font-audiowide text-white">Find Your Event</h3>
                   </div>
-                  <button
-                    type="button"
-                    onClick={closeEventFinder}
-                    className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
-                    aria-label="Close event finder"
-                    data-testid="close-event-finder"
-                  >
-                    <X className="w-5 h-5 text-white" />
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={clearFilters}
+                      className="px-3 py-2 rounded-full bg-white/10 hover:bg-white/20 text-xs text-gray-100 transition-colors"
+                    >
+                      Clear filters
+                    </button>
+                    <button
+                      type="button"
+                      onClick={closeEventFinder}
+                      className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                      aria-label="Close event finder"
+                      data-testid="close-event-finder"
+                    >
+                      <X className="w-5 h-5 text-white" />
+                    </button>
+                  </div>
                 </div>
 
                 <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
