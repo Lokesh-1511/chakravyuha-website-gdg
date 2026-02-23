@@ -3,12 +3,174 @@ import { motion, AnimatePresence } from 'framer-motion';
 import AnimatedSection from './AnimatedSection';
 import GlassCard from './GlassCard';
 import ClubModal from './ClubModal';
-import { fetchCommunityEvents } from '../data/communityEventsClient';
 import { Search, X, ChevronDown, Calendar, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
 import ParsedDescription from '../utils/parsedDescription';
 
 const CLUBS_API_URL = 'https://pdamit.in/api/persohub/clubs';
+const EVENTS_API_URL = 'https://pdamit.in/api/persohub/chakravyuha-26/events';
 const EVENTS_PER_PAGE = 6;
+
+function formatDate(dateStr) {
+  if (!dateStr) return '';
+  const date = new Date(`${dateStr}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return dateStr;
+  return date.toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric'
+  });
+}
+
+function createDateLabel(startDate, endDate) {
+  if (!startDate && !endDate) return 'Date TBA';
+  if (startDate && endDate) {
+    const start = formatDate(startDate);
+    const end = formatDate(endDate);
+    return start === end ? start : `${start} - ${end}`;
+  }
+  return formatDate(startDate || endDate);
+}
+
+function normalizePosterUrl(value) {
+  if (!value) return null;
+  if (Array.isArray(value)) {
+    const first = value[0];
+    if (typeof first === 'string') return first;
+    if (first && typeof first === 'object' && typeof first.url === 'string') return first.url;
+    return null;
+  }
+  if (typeof value === 'object') {
+    return typeof value.url === 'string' ? value.url : null;
+  }
+  if (typeof value !== 'string') return null;
+
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      return normalizePosterUrl(parsed);
+    } catch {
+      return trimmed;
+    }
+  }
+  return trimmed;
+}
+
+function toText(value, fallback = '') {
+  if (value === null || value === undefined) return fallback;
+  return String(value);
+}
+
+function normalizeIdentity(value) {
+  return toText(value).trim().toLowerCase().replace(/[^a-z0-9]+/g, '');
+}
+
+function normalizeClubRecord(rawClub) {
+  return {
+    clubId: toText(rawClub?.clubId ?? rawClub?.club_id ?? rawClub?.id),
+    clubName: rawClub?.clubName ?? rawClub?.club_name ?? 'Unknown Club',
+    clubUrl: rawClub?.clubUrl ?? rawClub?.club_url ?? null,
+    clubTagline: rawClub?.clubTagline ?? rawClub?.club_tagline ?? null,
+    clubImage: rawClub?.clubImage ?? rawClub?.club_logo_url ?? rawClub?.clubLogoUrl ?? null,
+    clubDescription: rawClub?.clubDescription ?? rawClub?.club_description ?? null,
+    events: Array.isArray(rawClub?.events) ? rawClub.events : []
+  };
+}
+
+function deriveOpenState(status, fallbackOpen) {
+  if (typeof fallbackOpen === 'boolean') return fallbackOpen;
+
+  const normalizedStatus = typeof status === 'string' ? status.trim().toLowerCase() : '';
+  if (['open', 'published', 'live', 'active', 'registration_open', 'registrations_open'].includes(normalizedStatus)) {
+    return true;
+  }
+  if (['closed', 'draft', 'archived', 'cancelled', 'completed', 'ended'].includes(normalizedStatus)) {
+    return false;
+  }
+  return false;
+}
+
+function normalizeEventRecord(rawEvent, clubId) {
+  const startDate = rawEvent?.start_date ?? rawEvent?.startDate ?? null;
+  const endDate = rawEvent?.end_date ?? rawEvent?.endDate ?? null;
+  const status = rawEvent?.status ?? '';
+  const resolvedClubId = toText(rawEvent?.club_id ?? rawEvent?.clubId ?? clubId);
+  const isOpen = deriveOpenState(status, rawEvent?.is_open ?? rawEvent?.isOpen);
+
+  return {
+    id: rawEvent?.id ?? rawEvent?.event_id ?? null,
+    slug: rawEvent?.slug ?? '',
+    event_code: rawEvent?.event_code ?? rawEvent?.eventCode ?? null,
+    clubKey: resolvedClubId,
+    community_id: resolvedClubId,
+    communityKey: resolvedClubId,
+    title: rawEvent?.title ?? rawEvent?.event_title ?? 'Untitled Event',
+    description: rawEvent?.description ?? '',
+    start_date: startDate,
+    end_date: endDate,
+    event_time: rawEvent?.event_time ?? rawEvent?.eventTime ?? null,
+    poster_url: normalizePosterUrl(rawEvent?.poster_url ?? rawEvent?.posterUrl),
+    whatsapp_url: rawEvent?.whatsapp_url ?? rawEvent?.whatsappUrl ?? null,
+    external_url_name: rawEvent?.external_url_name ?? rawEvent?.externalUrlName ?? null,
+    event_type: rawEvent?.event_type ?? rawEvent?.eventType ?? 'EVENT',
+    format: rawEvent?.format ?? null,
+    template_option: rawEvent?.template_option ?? rawEvent?.templateOption ?? null,
+    participant_mode: rawEvent?.participant_mode ?? rawEvent?.participantMode ?? null,
+    round_mode: rawEvent?.round_mode ?? rawEvent?.roundMode ?? null,
+    round_count: rawEvent?.round_count ?? rawEvent?.roundCount ?? null,
+    team_min_size: rawEvent?.team_min_size ?? rawEvent?.teamMinSize ?? null,
+    team_max_size: rawEvent?.team_max_size ?? rawEvent?.teamMaxSize ?? null,
+    is_visible: rawEvent?.is_visible ?? rawEvent?.isVisible ?? true,
+    status: toText(status, isOpen ? 'open' : 'closed'),
+    dateLabel: createDateLabel(startDate, endDate),
+    isOpen
+  };
+}
+
+function normalizeEventGroups(rawPayload, clubs) {
+  if (!Array.isArray(rawPayload)) return [];
+
+  const clubIdByName = new Map(
+    clubs.map((club) => [normalizeIdentity(club.clubName), String(club.clubId)])
+  );
+
+  const groupedEvents = rawPayload.flatMap((group) => {
+    const groupEvents = Array.isArray(group?.events) ? group.events : [];
+    if (groupEvents.length === 0) return [];
+
+    const groupClubIdRaw = toText(group?.club_id ?? group?.clubId);
+    const nameMatchedClubId = clubIdByName.get(normalizeIdentity(group?.club_name ?? group?.clubName)) || '';
+    const resolvedClubId = nameMatchedClubId || groupClubIdRaw;
+    if (!resolvedClubId) return [];
+
+    return groupEvents.map((event) =>
+      normalizeEventRecord(
+        {
+          ...event,
+          club_id: resolvedClubId
+        },
+        resolvedClubId
+      )
+    );
+  });
+
+  if (groupedEvents.length > 0) {
+    return groupedEvents;
+  }
+
+  return rawPayload.map((event) => normalizeEventRecord(event, event?.club_id ?? event?.clubId ?? ''));
+}
+
+function parseJsonIfString(payload) {
+  if (typeof payload !== 'string') return payload;
+  try {
+    return JSON.parse(payload);
+  } catch {
+    return payload;
+  }
+}
 
 const ClubsSection = () => {
   const [clubs, setClubs] = useState([]);
@@ -29,43 +191,57 @@ const ClubsSection = () => {
 
   const fetchClubs = useCallback(async () => {
     setLoading(true);
-    setError('');
-    try {
-      const response = await fetch(CLUBS_API_URL, { method: 'GET' });
-      if (!response.ok) {
-        throw new Error(`Failed to fetch clubs: ${response.status}`);
-      }
-      const data = await response.json();
-      if (!Array.isArray(data)) {
-        throw new Error('Unexpected clubs API response');
-      }
-      setClubs(data);
-    } catch (err) {
-      setError(err?.message || 'Unable to load clubs');
-      setClubs([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const fetchEvents = useCallback(async () => {
     setEventsLoading(true);
+    setError('');
     setEventsError('');
     try {
-      const data = await fetchCommunityEvents();
-      setEvents(data);
+      const [clubsResponse, eventsResponse] = await Promise.all([
+        fetch(CLUBS_API_URL, { method: 'GET' }),
+        fetch(EVENTS_API_URL, { method: 'GET' })
+      ]);
+
+      if (!clubsResponse.ok) {
+        throw new Error(`Failed to fetch clubs: ${clubsResponse.status}`);
+      }
+      if (!eventsResponse.ok) {
+        throw new Error(`Failed to fetch events: ${eventsResponse.status}`);
+      }
+
+      const clubsPayload = parseJsonIfString(await clubsResponse.json());
+      const eventsPayload = parseJsonIfString(await eventsResponse.json());
+
+      if (!Array.isArray(clubsPayload)) {
+        throw new Error('Unexpected clubs API response');
+      }
+
+      const normalizedClubs = clubsPayload.map(normalizeClubRecord).filter((club) => club.clubId !== '');
+      const inlineEvents = normalizedClubs
+        .flatMap((club) => {
+          return club.events.map((event) => normalizeEventRecord(event, club.clubId));
+        })
+        .filter((event) => event.is_visible !== false);
+      const groupedEvents = normalizeEventGroups(eventsPayload, normalizedClubs).filter(
+        (event) => event.is_visible !== false
+      );
+      const resolvedEvents = groupedEvents.length > 0 ? groupedEvents : inlineEvents;
+
+      setClubs(normalizedClubs.map(({ events: _events, ...club }) => club));
+      setEvents(resolvedEvents);
     } catch (err) {
-      setEventsError(err?.message || 'Unable to load events');
+      const message = err?.message || 'Unable to load clubs';
+      setError(message);
+      setEventsError(message);
+      setClubs([]);
       setEvents([]);
     } finally {
+      setLoading(false);
       setEventsLoading(false);
     }
   }, []);
 
   useEffect(() => {
     fetchClubs();
-    fetchEvents();
-  }, [fetchClubs, fetchEvents]);
+  }, [fetchClubs]);
 
   const getClubWebsiteUrl = useCallback((club) => {
     const rawUrl = [
@@ -102,7 +278,7 @@ const ClubsSection = () => {
   };
 
   const getEventClubKey = useCallback(
-    (event) => String(event.communityKey || event.community_id || ''),
+    (event) => String(event.clubKey || event.club_id || event.communityKey || event.community_id || ''),
     []
   );
 
@@ -263,7 +439,7 @@ const ClubsSection = () => {
               <p className="text-red-200 text-sm mb-3">{eventsError}</p>
               <button
                 type="button"
-                onClick={fetchEvents}
+                onClick={fetchClubs}
                 className="px-4 py-2 rounded-full bg-red-500/30 text-white hover:bg-red-500/50 transition-colors"
               >
                 Retry
@@ -291,11 +467,11 @@ const ClubsSection = () => {
                         testId={`club-card-${club.clubId}`}
                       >
                         <div className="flex flex-col items-center text-center">
-                          <div className="relative w-16 h-16 md:w-20 md:h-20 mb-4">
+                          <div className="relative w-20 h-20 md:w-24 md:h-24 mb-4">
                             <img
                               src={club.clubImage}
                               alt={club.clubName}
-                              className="w-full h-full object-contain rounded-xl bg-white/5 p-2"
+                              className="w-full h-full object-contain rounded-xl bg-white/5 p-1.5"
                             />
                             <div className="absolute inset-0 rounded-xl bg-purple-500/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
                           </div>
@@ -526,7 +702,7 @@ const ClubsSection = () => {
                       <p className="text-red-200 text-sm mb-3">{eventsError}</p>
                       <button
                         type="button"
-                        onClick={fetchEvents}
+                        onClick={fetchClubs}
                         className="px-4 py-2 rounded-full bg-red-500/30 text-white hover:bg-red-500/50 transition-colors"
                       >
                         Retry
@@ -786,7 +962,7 @@ const ClubsSection = () => {
         events={events}
         eventsLoading={eventsLoading}
         eventsError={eventsError}
-        onRetryEvents={fetchEvents}
+        onRetryEvents={fetchClubs}
       />
     </>
   );

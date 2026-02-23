@@ -56,7 +56,8 @@ function getEventTypeMeta(eventType) {
 }
 
 function getTeamSizeLabel(event) {
-  if (event.participant_mode !== 'TEAM') {
+  const participantMode = String(event.participant_mode || '').toLowerCase();
+  if (participantMode !== 'team') {
     return 'Individual';
   }
 
@@ -120,7 +121,7 @@ const EventCard = ({ event }) => {
             <span>{event.participant_mode}</span>
             <span>{event.round_mode}</span>
             <span>{event.round_count} Round{event.round_count > 1 ? 's' : ''}</span>
-            {event.participant_mode === 'TEAM' && (
+            {String(event.participant_mode || '').toLowerCase() === 'team' && (
               <span>Team {getTeamSizeLabel(event)}</span>
             )}
           </div>
@@ -194,7 +195,7 @@ const ClubModal = ({ club, isOpen, onClose, events, eventsLoading, eventsError, 
     () =>
       (events || []).filter(
         (event) =>
-          String(event.communityKey || event.community_id || '') === String(club?.clubId || '')
+          String(event.clubKey || event.club_id || event.communityKey || event.community_id || '') === String(club?.clubId || '')
       ),
     [club?.clubId, events]
   );

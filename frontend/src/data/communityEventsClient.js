@@ -21,6 +21,7 @@ const PASSTHROUGH_FIELDS = [
   'slug',
   'event_code',
   'community_id',
+  'community_name',
   'title',
   'description',
   'start_date',
@@ -76,7 +77,8 @@ function normalizeEvent(rawEvent) {
   normalized.communityKey = directIdMatch || nameMappedId || rawCommunityKey;
 
   normalized.dateLabel = createDateLabel(normalized.start_date, normalized.end_date);
-  normalized.isOpen = normalized.status === 'OPEN';
+  const status = typeof normalized.status === 'string' ? normalized.status.trim().toLowerCase() : '';
+  normalized.isOpen = ['open', 'published', 'live', 'active', 'registration_open', 'registrations_open'].includes(status);
   normalized.poster_url = normalizePosterUrl(normalized.poster_url);
 
   return normalized;
