@@ -19,7 +19,6 @@ const ClubsSection = () => {
   const [events, setEvents] = useState([]);
   const [eventsLoading, setEventsLoading] = useState(true);
   const [eventsError, setEventsError] = useState('');
-  const [eventFinderOpen, setEventFinderOpen] = useState(false);
   const [selectedEventType, setSelectedEventType] = useState('ALL');
   const [selectedClubFilter, setSelectedClubFilter] = useState('ALL');
   const [selectedDateFilter, setSelectedDateFilter] = useState('ALL');
@@ -191,21 +190,6 @@ const ClubsSection = () => {
     return items;
   }, [currentPage, totalPages]);
 
-  const openEventFinder = () => {
-    setEventFinderOpen(true);
-    setSelectedEvent(null);
-    setCurrentPage(1);
-    setOpenFilterMenu(null);
-  };
-
-  const closeEventFinder = () => {
-    setEventFinderOpen(false);
-    setSelectedEvent(null);
-    setCurrentPage(1);
-    setOpenFilterMenu(null);
-    setPosterLightbox(null);
-  };
-
   const clearFilters = () => {
     setSelectedEventType('ALL');
     setSelectedClubFilter('ALL');
@@ -337,46 +321,344 @@ const ClubsSection = () => {
                 </div>
               )}
 
-              <motion.button
-                type="button"
+              <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                onClick={openEventFinder}
-                className="mt-8 w-full p-4 md:p-5 rounded-2xl bg-black/50 border border-purple-500/30 hover:border-purple-400/60 transition-colors text-left"
-                data-testid="open-event-finder"
+                className="mt-8 rounded-2xl bg-[#09090d] border border-white/10 overflow-visible"
+                data-testid="event-finder-inline"
               >
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center shrink-0">
-                      <Search className="w-5 h-5 text-purple-300" />
+                <div className="border-b border-white/10 p-4 md:p-6">
+                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center shrink-0">
+                        <Search className="w-5 h-5 text-purple-300" />
+                      </div>
+                      <div className="min-w-0">
+                        <h3 className="text-xl md:text-2xl font-audiowide text-white">Find Your Event</h3>
+                        <p className="text-xs md:text-sm text-gray-400">
+                          Browse all events with filters by type and club
+                        </p>
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <p className="text-white font-semibold">Find Your Event</p>
-                      <p className="text-xs md:text-sm text-gray-400 truncate">
-                        Browse all events with filters by type and club
-                      </p>
+
+                    <div className="flex items-center gap-2 self-start sm:self-auto">
+                      <span className="px-3 py-1 rounded-full text-xs text-purple-300 bg-purple-500/20 shrink-0">
+                        {events.length} events
+                      </span>
+                      <button
+                        type="button"
+                        onClick={clearFilters}
+                        className="px-3 py-2 rounded-full bg-white/10 hover:bg-white/20 text-xs text-gray-100 transition-colors"
+                      >
+                        Clear filters
+                      </button>
                     </div>
                   </div>
-                  <span className="px-3 py-1 rounded-full text-xs text-purple-300 bg-purple-500/20 shrink-0">
-                    {events.length} events
-                  </span>
+
+                  <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div className="text-xs text-gray-300">
+                      <p>Event Type</p>
+                      <div className="relative mt-1" data-filter-dropdown>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setOpenFilterMenu((prev) => (prev === 'eventType' ? null : 'eventType'))
+                          }
+                          className="w-full rounded-xl bg-[#13131b] border border-purple-500/30 px-3 py-2.5 text-sm text-white flex items-center justify-between hover:border-purple-400 transition-colors"
+                          data-testid="filter-event-type"
+                        >
+                          <span className="truncate">{selectedEventType === 'ALL' ? 'All Types' : selectedEventType}</span>
+                          <ChevronDown className={`w-4 h-4 text-purple-300 transition-transform ${openFilterMenu === 'eventType' ? 'rotate-180' : ''}`} />
+                        </button>
+                        {openFilterMenu === 'eventType' && (
+                          <div className="absolute z-20 mt-2 w-full rounded-xl border border-purple-500/30 bg-[#11111a] shadow-[0_12px_30px_rgba(0,0,0,0.45)] overflow-hidden">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedEventType('ALL');
+                                setOpenFilterMenu(null);
+                              }}
+                              className={`w-full text-left px-3 py-2.5 text-sm transition-colors ${
+                                selectedEventType === 'ALL' ? 'bg-purple-500/20 text-white' : 'text-gray-200 hover:bg-white/10'
+                              }`}
+                            >
+                              All Types
+                            </button>
+                            {eventTypeOptions.map((type) => (
+                              <button
+                                key={type}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedEventType(type);
+                                  setOpenFilterMenu(null);
+                                }}
+                                className={`w-full text-left px-3 py-2.5 text-sm transition-colors ${
+                                  selectedEventType === type ? 'bg-purple-500/20 text-white' : 'text-gray-200 hover:bg-white/10'
+                                }`}
+                              >
+                                {type}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="text-xs text-gray-300">
+                      <p>Club</p>
+                      <div className="relative mt-1" data-filter-dropdown>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setOpenFilterMenu((prev) => (prev === 'club' ? null : 'club'))
+                          }
+                          className="w-full rounded-xl bg-[#13131b] border border-purple-500/30 px-3 py-2.5 text-sm text-white flex items-center justify-between hover:border-purple-400 transition-colors"
+                          data-testid="filter-club"
+                        >
+                          <span className="truncate">
+                            {selectedClubFilter === 'ALL'
+                              ? 'All Clubs'
+                              : (clubFilterOptions.find((club) => club.key === selectedClubFilter)?.label || 'All Clubs')}
+                          </span>
+                          <ChevronDown className={`w-4 h-4 text-purple-300 transition-transform ${openFilterMenu === 'club' ? 'rotate-180' : ''}`} />
+                        </button>
+                        {openFilterMenu === 'club' && (
+                          <div className="absolute z-20 mt-2 w-full rounded-xl border border-purple-500/30 bg-[#11111a] shadow-[0_12px_30px_rgba(0,0,0,0.45)] overflow-hidden max-h-64 overflow-y-auto">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedClubFilter('ALL');
+                                setOpenFilterMenu(null);
+                              }}
+                              className={`w-full text-left px-3 py-2.5 text-sm transition-colors ${
+                                selectedClubFilter === 'ALL' ? 'bg-purple-500/20 text-white' : 'text-gray-200 hover:bg-white/10'
+                              }`}
+                            >
+                              All Clubs
+                            </button>
+                            {clubFilterOptions.map((clubOption) => (
+                              <button
+                                key={clubOption.key}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedClubFilter(clubOption.key);
+                                  setOpenFilterMenu(null);
+                                }}
+                                className={`w-full text-left px-3 py-2.5 text-sm transition-colors ${
+                                  selectedClubFilter === clubOption.key ? 'bg-purple-500/20 text-white' : 'text-gray-200 hover:bg-white/10'
+                                }`}
+                              >
+                                {clubOption.label}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="text-xs text-gray-300">
+                      <p>Date</p>
+                      <div className="relative mt-1" data-filter-dropdown>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setOpenFilterMenu((prev) => (prev === 'date' ? null : 'date'))
+                          }
+                          className="w-full rounded-xl bg-[#13131b] border border-purple-500/30 px-3 py-2.5 text-sm text-white flex items-center justify-between hover:border-purple-400 transition-colors"
+                          data-testid="filter-date"
+                        >
+                          <span className="truncate">
+                            {selectedDateFilter === 'ALL' ? 'All Dates' : selectedDateFilter}
+                          </span>
+                          <ChevronDown className={`w-4 h-4 text-purple-300 transition-transform ${openFilterMenu === 'date' ? 'rotate-180' : ''}`} />
+                        </button>
+                        {openFilterMenu === 'date' && (
+                          <div className="absolute z-20 mt-2 w-full rounded-xl border border-purple-500/30 bg-[#11111a] shadow-[0_12px_30px_rgba(0,0,0,0.45)] overflow-hidden max-h-64 overflow-y-auto">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedDateFilter('ALL');
+                                setOpenFilterMenu(null);
+                              }}
+                              className={`w-full text-left px-3 py-2.5 text-sm transition-colors ${
+                                selectedDateFilter === 'ALL' ? 'bg-purple-500/20 text-white' : 'text-gray-200 hover:bg-white/10'
+                              }`}
+                            >
+                              All Dates
+                            </button>
+                            {dateFilterOptions.map((dateOption) => (
+                              <button
+                                key={dateOption}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedDateFilter(dateOption);
+                                  setOpenFilterMenu(null);
+                                }}
+                                className={`w-full text-left px-3 py-2.5 text-sm transition-colors ${
+                                  selectedDateFilter === dateOption ? 'bg-purple-500/20 text-white' : 'text-gray-200 hover:bg-white/10'
+                                }`}
+                              >
+                                {dateOption}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </motion.button>
+
+                <div className="p-4 md:p-6">
+                  {eventsLoading && (
+                    <div className="space-y-3">
+                      {Array.from({ length: 5 }).map((_, idx) => (
+                        <div
+                          key={`event-finder-skeleton-${idx}`}
+                          className="h-20 rounded-xl bg-white/5 border border-white/10 animate-pulse"
+                        />
+                      ))}
+                    </div>
+                  )}
+
+                  {!eventsLoading && eventsError && (
+                    <div className="rounded-xl border border-red-400/40 bg-red-500/10 p-5 text-center">
+                      <p className="text-red-200 text-sm mb-3">{eventsError}</p>
+                      <button
+                        type="button"
+                        onClick={fetchEvents}
+                        className="px-4 py-2 rounded-full bg-red-500/30 text-white hover:bg-red-500/50 transition-colors"
+                      >
+                        Retry
+                      </button>
+                    </div>
+                  )}
+
+                  {!eventsLoading && !eventsError && filteredEvents.length === 0 && (
+                    <div className="rounded-xl border border-white/10 bg-white/5 p-6 text-center text-gray-300">
+                      No events match the selected filters.
+                    </div>
+                  )}
+
+                  {!eventsLoading && !eventsError && filteredEvents.length > 0 && (
+                    <div className="space-y-5">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+                        {paginatedEvents.map((event, index) => {
+                          const eventKey = event.slug || event.event_code || `event-${index}`;
+                          const clubLabel = clubNameMap[getEventClubKey(event)] || String(event.community_id || 'Club');
+                          const hasPoster = typeof event.poster_url === 'string' && event.poster_url.trim() !== '';
+
+                          return (
+                            <motion.button
+                              key={eventKey}
+                              type="button"
+                              whileHover={{ y: -2 }}
+                              whileTap={{ scale: 0.99 }}
+                              onClick={() => setSelectedEvent(event)}
+                              className="group w-full rounded-xl border border-white/10 bg-white/[0.03] text-left p-3 md:p-4 hover:border-purple-400/60 transition-colors"
+                              data-testid={`event-finder-item-${eventKey}`}
+                            >
+                              {hasPoster && (
+                                <div className="rounded-lg overflow-hidden border border-white/10 bg-black/30 aspect-[5/4]">
+                                  <img
+                                    src={event.poster_url}
+                                    alt={event.title}
+                                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                                  />
+                                </div>
+                              )}
+
+                              <div className={`${hasPoster ? 'mt-3' : ''} min-w-0`}>
+                                <p className="text-white text-sm font-semibold line-clamp-2">{event.title}</p>
+                                <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px]">
+                                  <span className="px-2 py-1 rounded-full bg-purple-500/20 text-purple-200">
+                                    {event.event_type || 'EVENT'}
+                                  </span>
+                                  <span className="px-2 py-1 rounded-full bg-cyan-500/20 text-cyan-200 line-clamp-1">
+                                    {clubLabel}
+                                  </span>
+                                </div>
+                                <p className="mt-2 text-xs text-gray-400 inline-flex items-center gap-1">
+                                  <Calendar className="w-3 h-3" />
+                                  {event.dateLabel || 'Date TBA'}
+                                </p>
+                              </div>
+                            </motion.button>
+                          );
+                        })}
+                      </div>
+
+                      {totalPages > 1 && (
+                        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2.5">
+                          <p className="text-xs text-gray-400">
+                            Page {currentPage} of {totalPages}
+                          </p>
+
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                              disabled={currentPage === 1}
+                              className="h-8 w-8 inline-flex items-center justify-center rounded-lg border border-white/10 text-gray-200 hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                              aria-label="Previous page"
+                            >
+                              <ChevronLeft className="w-4 h-4" />
+                            </button>
+
+                            {paginationItems.map((item, index) =>
+                              typeof item === 'number' ? (
+                                <button
+                                  key={`page-${item}`}
+                                  type="button"
+                                  onClick={() => setCurrentPage(item)}
+                                  className={`h-8 min-w-8 px-2 rounded-lg text-xs border transition-colors ${
+                                    currentPage === item
+                                      ? 'bg-purple-500/30 border-purple-400/60 text-white'
+                                      : 'border-white/10 text-gray-200 hover:bg-white/10'
+                                  }`}
+                                >
+                                  {item}
+                                </button>
+                              ) : (
+                                <span
+                                  key={`ellipsis-${item}-${index}`}
+                                  className="h-8 min-w-8 px-2 inline-flex items-center justify-center text-gray-500 text-xs"
+                                >
+                                  ...
+                                </span>
+                              )
+                            )}
+
+                            <button
+                              type="button"
+                              onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                              disabled={currentPage === totalPages}
+                              className="h-8 w-8 inline-flex items-center justify-center rounded-lg border border-white/10 text-gray-200 hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                              aria-label="Next page"
+                            >
+                              <ChevronRight className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </motion.div>
             </>
           )}
         </div>
       </AnimatedSection>
 
       <AnimatePresence>
-        {eventFinderOpen && (
+        {selectedEvent && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/90 p-4 pt-20 pb-6 overflow-y-auto"
-            onClick={closeEventFinder}
-            data-testid="event-finder-overlay"
+            className="fixed inset-0 z-[55] bg-black/90 p-3 sm:p-4 flex items-center justify-center"
+            onClick={() => setSelectedEvent(null)}
+            data-testid="event-details-modal-overlay"
           >
             <motion.div
               initial={{ opacity: 0, y: 30, scale: 0.98 }}
@@ -384,421 +666,81 @@ const ClubsSection = () => {
               exit={{ opacity: 0, y: 30, scale: 0.98 }}
               transition={{ duration: 0.2 }}
               onClick={(e) => e.stopPropagation()}
-              className="relative w-full max-w-5xl mx-auto rounded-2xl bg-[#09090d] border border-white/10 overflow-hidden"
-              data-testid="event-finder-modal"
+              className="w-full max-w-2xl rounded-2xl border border-purple-400/30 bg-[#0d0d14] p-4 sm:p-5 shadow-[0_20px_60px_rgba(0,0,0,0.45)] max-h-[calc(100vh-1.5rem)] sm:max-h-[calc(100vh-3rem)] overflow-y-auto"
+              data-testid="event-details-modal"
             >
-              <div className="sticky top-0 z-10 bg-[#09090d]/95 backdrop-blur-md border-b border-white/10 p-4 md:p-6">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <h3 className="text-xl md:text-2xl font-audiowide text-white">Find Your Event</h3>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={clearFilters}
-                      className="px-3 py-2 rounded-full bg-white/10 hover:bg-white/20 text-xs text-gray-100 transition-colors"
-                    >
-                      Clear filters
-                    </button>
-                    <button
-                      type="button"
-                      onClick={closeEventFinder}
-                      className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
-                      aria-label="Close event finder"
-                      data-testid="close-event-finder"
-                    >
-                      <X className="w-5 h-5 text-white" />
-                    </button>
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-white text-lg md:text-xl font-semibold break-words">
+                    {selectedEvent.title}
+                  </p>
+                  <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                    <span className="px-2 py-1 rounded-full bg-purple-500/20 text-purple-200">
+                      {selectedEvent.event_type || 'EVENT'}
+                    </span>
+                    <span className="px-2 py-1 rounded-full bg-cyan-500/20 text-cyan-200">
+                      {clubNameMap[getEventClubKey(selectedEvent)] || String(selectedEvent.community_id || 'Club')}
+                    </span>
+                    <span className="inline-flex items-center gap-1 text-gray-400">
+                      <Calendar className="w-3 h-3" />
+                      {selectedEvent.dateLabel || 'Date TBA'}
+                    </span>
                   </div>
                 </div>
 
-                <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
-                  <div className="text-xs text-gray-300">
-                    <p>Event Type</p>
-                    <div className="relative mt-1" data-filter-dropdown>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setOpenFilterMenu((prev) => (prev === 'eventType' ? null : 'eventType'))
-                        }
-                        className="w-full rounded-xl bg-[#13131b] border border-purple-500/30 px-3 py-2.5 text-sm text-white flex items-center justify-between hover:border-purple-400 transition-colors"
-                        data-testid="filter-event-type"
-                      >
-                        <span className="truncate">{selectedEventType === 'ALL' ? 'All Types' : selectedEventType}</span>
-                        <ChevronDown className={`w-4 h-4 text-purple-300 transition-transform ${openFilterMenu === 'eventType' ? 'rotate-180' : ''}`} />
-                      </button>
-                      {openFilterMenu === 'eventType' && (
-                        <div className="absolute z-20 mt-2 w-full rounded-xl border border-purple-500/30 bg-[#11111a] shadow-[0_12px_30px_rgba(0,0,0,0.45)] overflow-hidden">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setSelectedEventType('ALL');
-                              setOpenFilterMenu(null);
-                            }}
-                            className={`w-full text-left px-3 py-2.5 text-sm transition-colors ${
-                              selectedEventType === 'ALL' ? 'bg-purple-500/20 text-white' : 'text-gray-200 hover:bg-white/10'
-                            }`}
-                          >
-                            All Types
-                          </button>
-                          {eventTypeOptions.map((type) => (
-                            <button
-                              key={type}
-                              type="button"
-                              onClick={() => {
-                                setSelectedEventType(type);
-                                setOpenFilterMenu(null);
-                              }}
-                              className={`w-full text-left px-3 py-2.5 text-sm transition-colors ${
-                                selectedEventType === type ? 'bg-purple-500/20 text-white' : 'text-gray-200 hover:bg-white/10'
-                              }`}
-                            >
-                              {type}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="text-xs text-gray-300">
-                    <p>Club</p>
-                    <div className="relative mt-1" data-filter-dropdown>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setOpenFilterMenu((prev) => (prev === 'club' ? null : 'club'))
-                        }
-                        className="w-full rounded-xl bg-[#13131b] border border-purple-500/30 px-3 py-2.5 text-sm text-white flex items-center justify-between hover:border-purple-400 transition-colors"
-                        data-testid="filter-club"
-                      >
-                        <span className="truncate">
-                          {selectedClubFilter === 'ALL'
-                            ? 'All Clubs'
-                            : (clubFilterOptions.find((club) => club.key === selectedClubFilter)?.label || 'All Clubs')}
-                        </span>
-                        <ChevronDown className={`w-4 h-4 text-purple-300 transition-transform ${openFilterMenu === 'club' ? 'rotate-180' : ''}`} />
-                      </button>
-                      {openFilterMenu === 'club' && (
-                        <div className="absolute z-20 mt-2 w-full rounded-xl border border-purple-500/30 bg-[#11111a] shadow-[0_12px_30px_rgba(0,0,0,0.45)] overflow-hidden max-h-64 overflow-y-auto">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setSelectedClubFilter('ALL');
-                              setOpenFilterMenu(null);
-                            }}
-                            className={`w-full text-left px-3 py-2.5 text-sm transition-colors ${
-                              selectedClubFilter === 'ALL' ? 'bg-purple-500/20 text-white' : 'text-gray-200 hover:bg-white/10'
-                            }`}
-                          >
-                            All Clubs
-                          </button>
-                          {clubFilterOptions.map((clubOption) => (
-                            <button
-                              key={clubOption.key}
-                              type="button"
-                              onClick={() => {
-                                setSelectedClubFilter(clubOption.key);
-                                setOpenFilterMenu(null);
-                              }}
-                              className={`w-full text-left px-3 py-2.5 text-sm transition-colors ${
-                                selectedClubFilter === clubOption.key ? 'bg-purple-500/20 text-white' : 'text-gray-200 hover:bg-white/10'
-                              }`}
-                            >
-                              {clubOption.label}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="text-xs text-gray-300">
-                    <p>Date</p>
-                    <div className="relative mt-1" data-filter-dropdown>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setOpenFilterMenu((prev) => (prev === 'date' ? null : 'date'))
-                        }
-                        className="w-full rounded-xl bg-[#13131b] border border-purple-500/30 px-3 py-2.5 text-sm text-white flex items-center justify-between hover:border-purple-400 transition-colors"
-                        data-testid="filter-date"
-                      >
-                        <span className="truncate">
-                          {selectedDateFilter === 'ALL' ? 'All Dates' : selectedDateFilter}
-                        </span>
-                        <ChevronDown className={`w-4 h-4 text-purple-300 transition-transform ${openFilterMenu === 'date' ? 'rotate-180' : ''}`} />
-                      </button>
-                      {openFilterMenu === 'date' && (
-                        <div className="absolute z-20 mt-2 w-full rounded-xl border border-purple-500/30 bg-[#11111a] shadow-[0_12px_30px_rgba(0,0,0,0.45)] overflow-hidden max-h-64 overflow-y-auto">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setSelectedDateFilter('ALL');
-                              setOpenFilterMenu(null);
-                            }}
-                            className={`w-full text-left px-3 py-2.5 text-sm transition-colors ${
-                              selectedDateFilter === 'ALL' ? 'bg-purple-500/20 text-white' : 'text-gray-200 hover:bg-white/10'
-                            }`}
-                          >
-                            All Dates
-                          </button>
-                          {dateFilterOptions.map((dateOption) => (
-                            <button
-                              key={dateOption}
-                              type="button"
-                              onClick={() => {
-                                setSelectedDateFilter(dateOption);
-                                setOpenFilterMenu(null);
-                              }}
-                              className={`w-full text-left px-3 py-2.5 text-sm transition-colors ${
-                                selectedDateFilter === dateOption ? 'bg-purple-500/20 text-white' : 'text-gray-200 hover:bg-white/10'
-                              }`}
-                            >
-                              {dateOption}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedEvent(null)}
+                  className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors shrink-0"
+                  aria-label="Close event details"
+                >
+                  <X className="w-4 h-4 text-white" />
+                </button>
               </div>
 
-              <div className="p-4 md:p-6">
-                {eventsLoading && (
-                  <div className="space-y-3">
-                    {Array.from({ length: 5 }).map((_, idx) => (
-                      <div
-                        key={`event-finder-skeleton-${idx}`}
-                        className="h-20 rounded-xl bg-white/5 border border-white/10 animate-pulse"
-                      />
-                    ))}
-                  </div>
-                )}
+              {selectedEvent.poster_url && (
+                <button
+                  type="button"
+                  className="mt-4 block w-full rounded-xl overflow-hidden border border-white/10 bg-black/30"
+                  onClick={() =>
+                    setPosterLightbox({
+                      src: selectedEvent.poster_url,
+                      alt: selectedEvent.title
+                    })
+                  }
+                  data-testid={`event-poster-open-${selectedEvent.slug || selectedEvent.event_code || 'active'}`}
+                >
+                  <img
+                    src={selectedEvent.poster_url}
+                    alt={selectedEvent.title}
+                    className="w-full object-contain max-h-[320px] sm:max-h-[360px] hover:scale-[1.01] transition-transform"
+                  />
+                </button>
+              )}
 
-                {!eventsLoading && eventsError && (
-                  <div className="rounded-xl border border-red-400/40 bg-red-500/10 p-5 text-center">
-                    <p className="text-red-200 text-sm mb-3">{eventsError}</p>
-                    <button
-                      type="button"
-                      onClick={fetchEvents}
-                      className="px-4 py-2 rounded-full bg-red-500/30 text-white hover:bg-red-500/50 transition-colors"
-                    >
-                      Retry
-                    </button>
-                  </div>
-                )}
-
-                {!eventsLoading && !eventsError && filteredEvents.length === 0 && (
-                  <div className="rounded-xl border border-white/10 bg-white/5 p-6 text-center text-gray-300">
-                    No events match the selected filters.
-                  </div>
-                )}
-
-                {!eventsLoading && !eventsError && filteredEvents.length > 0 && (
-                  <div className="space-y-5">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
-                      {paginatedEvents.map((event, index) => {
-                        const eventKey = event.slug || event.event_code || `event-${index}`;
-                        const clubLabel = clubNameMap[getEventClubKey(event)] || String(event.community_id || 'Club');
-                        const hasPoster = typeof event.poster_url === 'string' && event.poster_url.trim() !== '';
-
-                        return (
-                          <motion.button
-                            key={eventKey}
-                            type="button"
-                            whileHover={{ y: -2 }}
-                            whileTap={{ scale: 0.99 }}
-                            onClick={() => setSelectedEvent(event)}
-                            className="group w-full rounded-xl border border-white/10 bg-white/[0.03] text-left p-3 md:p-4 hover:border-purple-400/60 transition-colors"
-                            data-testid={`event-finder-item-${eventKey}`}
-                          >
-                            <div className="rounded-lg overflow-hidden border border-white/10 bg-black/30 aspect-[5/4]">
-                              {hasPoster ? (
-                                <img
-                                  src={event.poster_url}
-                                  alt={event.title}
-                                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-                                />
-                              ) : (
-                                <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-purple-500/10 via-black to-cyan-500/10">
-                                  <Calendar className="w-7 h-7 text-purple-200/80" />
-                                </div>
-                              )}
-                            </div>
-
-                            <div className="mt-3 min-w-0">
-                              <p className="text-white text-sm font-semibold line-clamp-2">{event.title}</p>
-                              <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px]">
-                                <span className="px-2 py-1 rounded-full bg-purple-500/20 text-purple-200">
-                                  {event.event_type || 'EVENT'}
-                                </span>
-                                <span className="px-2 py-1 rounded-full bg-cyan-500/20 text-cyan-200 line-clamp-1">
-                                  {clubLabel}
-                                </span>
-                              </div>
-                              <p className="mt-2 text-xs text-gray-400 inline-flex items-center gap-1">
-                                <Calendar className="w-3 h-3" />
-                                {event.dateLabel || 'Date TBA'}
-                              </p>
-                            </div>
-                          </motion.button>
-                        );
-                      })}
-                    </div>
-
-                    {totalPages > 1 && (
-                      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2.5">
-                        <p className="text-xs text-gray-400">
-                          Page {currentPage} of {totalPages}
-                        </p>
-
-                        <div className="flex items-center gap-1">
-                          <button
-                            type="button"
-                            onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                            disabled={currentPage === 1}
-                            className="h-8 w-8 inline-flex items-center justify-center rounded-lg border border-white/10 text-gray-200 hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                            aria-label="Previous page"
-                          >
-                            <ChevronLeft className="w-4 h-4" />
-                          </button>
-
-                          {paginationItems.map((item, index) =>
-                            typeof item === 'number' ? (
-                              <button
-                                key={`page-${item}`}
-                                type="button"
-                                onClick={() => setCurrentPage(item)}
-                                className={`h-8 min-w-8 px-2 rounded-lg text-xs border transition-colors ${
-                                  currentPage === item
-                                    ? 'bg-purple-500/30 border-purple-400/60 text-white'
-                                    : 'border-white/10 text-gray-200 hover:bg-white/10'
-                                }`}
-                              >
-                                {item}
-                              </button>
-                            ) : (
-                              <span
-                                key={`ellipsis-${item}-${index}`}
-                                className="h-8 min-w-8 px-2 inline-flex items-center justify-center text-gray-500 text-xs"
-                              >
-                                ...
-                              </span>
-                            )
-                          )}
-
-                          <button
-                            type="button"
-                            onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-                            disabled={currentPage === totalPages}
-                            className="h-8 w-8 inline-flex items-center justify-center rounded-lg border border-white/10 text-gray-200 hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                            aria-label="Next page"
-                          >
-                            <ChevronRight className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
+              <div className="mt-4 text-sm text-gray-300 space-y-2">
+                <ParsedDescription
+                  text={selectedEvent.description}
+                  emptyText="Description will be updated soon."
+                  listClassName="list-disc space-y-1 pl-5 text-gray-300"
+                />
               </div>
 
-              <AnimatePresence>
-                {selectedEvent && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="absolute inset-0 z-20 bg-black/90 p-4 md:p-6 overflow-y-auto"
-                    onClick={() => setSelectedEvent(null)}
-                    data-testid="event-details-modal-overlay"
-                  >
-                    <motion.div
-                      initial={{ opacity: 0, y: 20, scale: 0.98 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 20, scale: 0.98 }}
-                      onClick={(e) => e.stopPropagation()}
-                      className="mx-auto w-full max-w-3xl rounded-2xl border border-purple-400/30 bg-[#0d0d14] p-4 md:p-5 shadow-[0_20px_60px_rgba(0,0,0,0.45)]"
-                      data-testid="event-details-modal"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="text-white text-lg md:text-xl font-semibold break-words">
-                            {selectedEvent.title}
-                          </p>
-                          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
-                            <span className="px-2 py-1 rounded-full bg-purple-500/20 text-purple-200">
-                              {selectedEvent.event_type || 'EVENT'}
-                            </span>
-                            <span className="px-2 py-1 rounded-full bg-cyan-500/20 text-cyan-200">
-                              {clubNameMap[getEventClubKey(selectedEvent)] || String(selectedEvent.community_id || 'Club')}
-                            </span>
-                            <span className="inline-flex items-center gap-1 text-gray-400">
-                              <Calendar className="w-3 h-3" />
-                              {selectedEvent.dateLabel || 'Date TBA'}
-                            </span>
-                          </div>
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() => setSelectedEvent(null)}
-                          className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors shrink-0"
-                          aria-label="Close event details"
-                        >
-                          <X className="w-4 h-4 text-white" />
-                        </button>
-                      </div>
-
-                      {selectedEvent.poster_url && (
-                        <button
-                          type="button"
-                          className="mt-4 block w-full rounded-xl overflow-hidden border border-white/10 bg-black/30"
-                          onClick={() =>
-                            setPosterLightbox({
-                              src: selectedEvent.poster_url,
-                              alt: selectedEvent.title
-                            })
-                          }
-                          data-testid={`event-poster-open-${selectedEvent.slug || selectedEvent.event_code || 'active'}`}
-                        >
-                          <img
-                            src={selectedEvent.poster_url}
-                            alt={selectedEvent.title}
-                            className="w-full object-contain max-h-[360px] hover:scale-[1.01] transition-transform"
-                          />
-                        </button>
-                      )}
-
-                      <div className="mt-4 text-sm text-gray-300 space-y-2">
-                        <ParsedDescription
-                          text={selectedEvent.description}
-                          emptyText="Description will be updated soon."
-                          listClassName="list-disc space-y-1 pl-5 text-gray-300"
-                        />
-                      </div>
-
-                      {selectedEvent.whatsapp_url ? (
-                        <a
-                          href={selectedEvent.whatsapp_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="mt-5 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-600 hover:bg-purple-500 text-white text-xs font-medium transition-colors"
-                        >
-                          Register Now
-                          <ExternalLink className="w-3.5 h-3.5" />
-                        </a>
-                      ) : (
-                        <span className="mt-5 inline-flex items-center px-3 py-2 rounded-full bg-white/10 text-gray-300 text-xs">
-                          Registration link unavailable
-                        </span>
-                      )}
-                    </motion.div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+              {selectedEvent.whatsapp_url ? (
+                <a
+                  href={selectedEvent.whatsapp_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-5 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-600 hover:bg-purple-500 text-white text-xs font-medium transition-colors"
+                >
+                  Register Now
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+              ) : (
+                <span className="mt-5 inline-flex items-center px-3 py-2 rounded-full bg-white/10 text-gray-300 text-xs">
+                  Registration link unavailable
+                </span>
+              )}
             </motion.div>
           </motion.div>
         )}
