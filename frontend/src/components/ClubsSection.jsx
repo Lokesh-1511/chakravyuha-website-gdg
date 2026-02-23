@@ -4,10 +4,11 @@ import AnimatedSection from './AnimatedSection';
 import GlassCard from './GlassCard';
 import ClubModal from './ClubModal';
 import { fetchCommunityEvents } from '../data/communityEventsClient';
-import { Search, X, ChevronDown, Calendar } from 'lucide-react';
+import { Search, X, ChevronDown, Calendar, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
 import ParsedDescription from '../utils/parsedDescription';
 
 const CLUBS_API_URL = 'https://pdamit.in/api/persohub/clubs';
+const EVENTS_PER_PAGE = 6;
 
 const ClubsSection = () => {
   const [clubs, setClubs] = useState([]);
@@ -22,7 +23,8 @@ const ClubsSection = () => {
   const [selectedEventType, setSelectedEventType] = useState('ALL');
   const [selectedClubFilter, setSelectedClubFilter] = useState('ALL');
   const [selectedDateFilter, setSelectedDateFilter] = useState('ALL');
-  const [expandedEventKey, setExpandedEventKey] = useState(null);
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
   const [openFilterMenu, setOpenFilterMenu] = useState(null);
   const [posterLightbox, setPosterLightbox] = useState(null);
 
@@ -159,15 +161,47 @@ const ClubsSection = () => {
     return clubs.filter((club) => eventClubKeys.has(String(club.clubId)));
   }, [clubs, events, getEventClubKey]);
 
+  const totalPages = useMemo(
+    () => Math.max(1, Math.ceil(filteredEvents.length / EVENTS_PER_PAGE)),
+    [filteredEvents.length]
+  );
+
+  const paginatedEvents = useMemo(() => {
+    const safePage = Math.min(currentPage, totalPages);
+    const startIndex = (safePage - 1) * EVENTS_PER_PAGE;
+    return filteredEvents.slice(startIndex, startIndex + EVENTS_PER_PAGE);
+  }, [filteredEvents, currentPage, totalPages]);
+
+  const paginationItems = useMemo(() => {
+    if (totalPages <= 7) {
+      return Array.from({ length: totalPages }, (_, index) => index + 1);
+    }
+
+    const items = [1];
+    const windowStart = Math.max(2, currentPage - 1);
+    const windowEnd = Math.min(totalPages - 1, currentPage + 1);
+
+    if (windowStart > 2) items.push('left-ellipsis');
+    for (let page = windowStart; page <= windowEnd; page += 1) {
+      items.push(page);
+    }
+    if (windowEnd < totalPages - 1) items.push('right-ellipsis');
+    items.push(totalPages);
+
+    return items;
+  }, [currentPage, totalPages]);
+
   const openEventFinder = () => {
     setEventFinderOpen(true);
-    setExpandedEventKey(null);
+    setSelectedEvent(null);
+    setCurrentPage(1);
     setOpenFilterMenu(null);
   };
 
   const closeEventFinder = () => {
     setEventFinderOpen(false);
-    setExpandedEventKey(null);
+    setSelectedEvent(null);
+    setCurrentPage(1);
     setOpenFilterMenu(null);
     setPosterLightbox(null);
   };
@@ -176,12 +210,22 @@ const ClubsSection = () => {
     setSelectedEventType('ALL');
     setSelectedClubFilter('ALL');
     setSelectedDateFilter('ALL');
+    setSelectedEvent(null);
+    setCurrentPage(1);
     setOpenFilterMenu(null);
   };
 
   useEffect(() => {
     setOpenFilterMenu(null);
+    setSelectedEvent(null);
+    setCurrentPage(1);
   }, [selectedEventType, selectedClubFilter, selectedDateFilter]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   useEffect(() => {
     if (!openFilterMenu) return undefined;
@@ -340,7 +384,7 @@ const ClubsSection = () => {
               exit={{ opacity: 0, y: 30, scale: 0.98 }}
               transition={{ duration: 0.2 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-5xl mx-auto rounded-2xl bg-[#09090d] border border-white/10 overflow-hidden"
+              className="relative w-full max-w-5xl mx-auto rounded-2xl bg-[#09090d] border border-white/10 overflow-hidden"
               data-testid="event-finder-modal"
             >
               <div className="sticky top-0 z-10 bg-[#09090d]/95 backdrop-blur-md border-b border-white/10 p-4 md:p-6">
@@ -553,93 +597,208 @@ const ClubsSection = () => {
                 )}
 
                 {!eventsLoading && !eventsError && filteredEvents.length > 0 && (
-                  <div className="space-y-3">
-                    {filteredEvents.map((event, index) => {
-                      const eventKey = event.slug || event.event_code || `event-${index}`;
-                      const isExpanded = expandedEventKey === eventKey;
-                      const clubLabel = clubNameMap[getEventClubKey(event)] || String(event.community_id || 'Club');
+                  <div className="space-y-5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+                      {paginatedEvents.map((event, index) => {
+                        const eventKey = event.slug || event.event_code || `event-${index}`;
+                        const clubLabel = clubNameMap[getEventClubKey(event)] || String(event.community_id || 'Club');
+                        const hasPoster = typeof event.poster_url === 'string' && event.poster_url.trim() !== '';
 
-                      return (
-                        <div
-                          key={eventKey}
-                          className="rounded-xl border border-white/10 bg-white/[0.03] overflow-hidden"
-                          data-testid={`event-finder-item-${eventKey}`}
-                        >
-                          <button
+                        return (
+                          <motion.button
+                            key={eventKey}
                             type="button"
-                            onClick={() => setExpandedEventKey(isExpanded ? null : eventKey)}
-                            className="w-full text-left p-4 flex items-start justify-between gap-3"
+                            whileHover={{ y: -2 }}
+                            whileTap={{ scale: 0.99 }}
+                            onClick={() => setSelectedEvent(event)}
+                            className="group w-full rounded-xl border border-white/10 bg-white/[0.03] text-left p-3 md:p-4 hover:border-purple-400/60 transition-colors"
+                            data-testid={`event-finder-item-${eventKey}`}
                           >
-                            <div className="min-w-0">
-                              <p className="text-white font-semibold truncate">{event.title}</p>
-                              <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                            <div className="rounded-lg overflow-hidden border border-white/10 bg-black/30 aspect-[5/4]">
+                              {hasPoster ? (
+                                <img
+                                  src={event.poster_url}
+                                  alt={event.title}
+                                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                                />
+                              ) : (
+                                <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-purple-500/10 via-black to-cyan-500/10">
+                                  <Calendar className="w-7 h-7 text-purple-200/80" />
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="mt-3 min-w-0">
+                              <p className="text-white text-sm font-semibold line-clamp-2">{event.title}</p>
+                              <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px]">
                                 <span className="px-2 py-1 rounded-full bg-purple-500/20 text-purple-200">
                                   {event.event_type || 'EVENT'}
                                 </span>
-                                <span className="px-2 py-1 rounded-full bg-cyan-500/20 text-cyan-200">
+                                <span className="px-2 py-1 rounded-full bg-cyan-500/20 text-cyan-200 line-clamp-1">
                                   {clubLabel}
                                 </span>
-                                <span className="inline-flex items-center gap-1 text-gray-400">
-                                  <Calendar className="w-3 h-3" />
-                                  {event.dateLabel || 'Date TBA'}
-                                </span>
                               </div>
+                              <p className="mt-2 text-xs text-gray-400 inline-flex items-center gap-1">
+                                <Calendar className="w-3 h-3" />
+                                {event.dateLabel || 'Date TBA'}
+                              </p>
                             </div>
-                            <ChevronDown
-                              className={`w-5 h-5 text-gray-300 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-                            />
+                          </motion.button>
+                        );
+                      })}
+                    </div>
+
+                    {totalPages > 1 && (
+                      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2.5">
+                        <p className="text-xs text-gray-400">
+                          Page {currentPage} of {totalPages}
+                        </p>
+
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                            disabled={currentPage === 1}
+                            className="h-8 w-8 inline-flex items-center justify-center rounded-lg border border-white/10 text-gray-200 hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                            aria-label="Previous page"
+                          >
+                            <ChevronLeft className="w-4 h-4" />
                           </button>
 
-                          {isExpanded && (
-                            <div className="px-4 pb-4 border-t border-white/10 pt-3 space-y-3">
-                              {event.poster_url && (
-                                <button
-                                  type="button"
-                                  className="block w-full max-w-md rounded-lg overflow-hidden border border-white/10 bg-black/30"
-                                  onClick={() =>
-                                    setPosterLightbox({
-                                      src: event.poster_url,
-                                      alt: event.title
-                                    })
-                                  }
-                                  data-testid={`event-poster-open-${eventKey}`}
-                                >
-                                  <img
-                                    src={event.poster_url}
-                                    alt={event.title}
-                                    className="w-full object-contain aspect-[5/4] hover:scale-[1.01] transition-transform"
-                                  />
-                                </button>
-                              )}
-                              <div className="text-sm text-gray-300 space-y-2">
-                                <ParsedDescription
-                                  text={event.description}
-                                  emptyText="Description will be updated soon."
-                                  listClassName="list-disc space-y-1 pl-5 text-gray-300"
-                                />
-                              </div>
-                              {event.whatsapp_url ? (
-                                <a
-                                  href={event.whatsapp_url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="inline-flex items-center px-3 py-2 rounded-full bg-purple-600 hover:bg-purple-500 text-white text-xs font-medium transition-colors"
-                                >
-                                  Register Now
-                                </a>
-                              ) : (
-                                <span className="inline-flex items-center px-3 py-2 rounded-full bg-white/10 text-gray-300 text-xs">
-                                  Registration link unavailable
-                                </span>
-                              )}
-                            </div>
+                          {paginationItems.map((item, index) =>
+                            typeof item === 'number' ? (
+                              <button
+                                key={`page-${item}`}
+                                type="button"
+                                onClick={() => setCurrentPage(item)}
+                                className={`h-8 min-w-8 px-2 rounded-lg text-xs border transition-colors ${
+                                  currentPage === item
+                                    ? 'bg-purple-500/30 border-purple-400/60 text-white'
+                                    : 'border-white/10 text-gray-200 hover:bg-white/10'
+                                }`}
+                              >
+                                {item}
+                              </button>
+                            ) : (
+                              <span
+                                key={`ellipsis-${item}-${index}`}
+                                className="h-8 min-w-8 px-2 inline-flex items-center justify-center text-gray-500 text-xs"
+                              >
+                                ...
+                              </span>
+                            )
                           )}
+
+                          <button
+                            type="button"
+                            onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                            disabled={currentPage === totalPages}
+                            className="h-8 w-8 inline-flex items-center justify-center rounded-lg border border-white/10 text-gray-200 hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                            aria-label="Next page"
+                          >
+                            <ChevronRight className="w-4 h-4" />
+                          </button>
                         </div>
-                      );
-                    })}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
+
+              <AnimatePresence>
+                {selectedEvent && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="absolute inset-0 z-20 bg-black/90 p-4 md:p-6 overflow-y-auto"
+                    onClick={() => setSelectedEvent(null)}
+                    data-testid="event-details-modal-overlay"
+                  >
+                    <motion.div
+                      initial={{ opacity: 0, y: 20, scale: 0.98 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 20, scale: 0.98 }}
+                      onClick={(e) => e.stopPropagation()}
+                      className="mx-auto w-full max-w-3xl rounded-2xl border border-purple-400/30 bg-[#0d0d14] p-4 md:p-5 shadow-[0_20px_60px_rgba(0,0,0,0.45)]"
+                      data-testid="event-details-modal"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-white text-lg md:text-xl font-semibold break-words">
+                            {selectedEvent.title}
+                          </p>
+                          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                            <span className="px-2 py-1 rounded-full bg-purple-500/20 text-purple-200">
+                              {selectedEvent.event_type || 'EVENT'}
+                            </span>
+                            <span className="px-2 py-1 rounded-full bg-cyan-500/20 text-cyan-200">
+                              {clubNameMap[getEventClubKey(selectedEvent)] || String(selectedEvent.community_id || 'Club')}
+                            </span>
+                            <span className="inline-flex items-center gap-1 text-gray-400">
+                              <Calendar className="w-3 h-3" />
+                              {selectedEvent.dateLabel || 'Date TBA'}
+                            </span>
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => setSelectedEvent(null)}
+                          className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors shrink-0"
+                          aria-label="Close event details"
+                        >
+                          <X className="w-4 h-4 text-white" />
+                        </button>
+                      </div>
+
+                      {selectedEvent.poster_url && (
+                        <button
+                          type="button"
+                          className="mt-4 block w-full rounded-xl overflow-hidden border border-white/10 bg-black/30"
+                          onClick={() =>
+                            setPosterLightbox({
+                              src: selectedEvent.poster_url,
+                              alt: selectedEvent.title
+                            })
+                          }
+                          data-testid={`event-poster-open-${selectedEvent.slug || selectedEvent.event_code || 'active'}`}
+                        >
+                          <img
+                            src={selectedEvent.poster_url}
+                            alt={selectedEvent.title}
+                            className="w-full object-contain max-h-[360px] hover:scale-[1.01] transition-transform"
+                          />
+                        </button>
+                      )}
+
+                      <div className="mt-4 text-sm text-gray-300 space-y-2">
+                        <ParsedDescription
+                          text={selectedEvent.description}
+                          emptyText="Description will be updated soon."
+                          listClassName="list-disc space-y-1 pl-5 text-gray-300"
+                        />
+                      </div>
+
+                      {selectedEvent.whatsapp_url ? (
+                        <a
+                          href={selectedEvent.whatsapp_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-5 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-600 hover:bg-purple-500 text-white text-xs font-medium transition-colors"
+                        >
+                          Register Now
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
+                      ) : (
+                        <span className="mt-5 inline-flex items-center px-3 py-2 rounded-full bg-white/10 text-gray-300 text-xs">
+                          Registration link unavailable
+                        </span>
+                      )}
+                    </motion.div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </motion.div>
           </motion.div>
         )}

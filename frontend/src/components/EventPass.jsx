@@ -4,6 +4,8 @@ import AnimatedSection from './AnimatedSection';
 import { useContentSection } from '../data/chakravyuhaContent';
 import { Check, Star } from 'lucide-react';
 
+const PASSES_FORM_URL = 'https://forms.gle/STeHmDJ3Rq2rhj1Q9';
+
 const EventPass = () => {
   const eventPass = useContentSection('eventPass');
 
@@ -108,6 +110,18 @@ const EventPass = () => {
               </motion.div>
             );
           })}
+        </div>
+
+        <div className="mt-10 flex justify-center">
+          <a
+            href={PASSES_FORM_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-neon group"
+            data-testid="get-your-pass-button"
+          >
+            <span>Get Your Pass</span>
+          </a>
         </div>
       </div>
     </AnimatedSection>
