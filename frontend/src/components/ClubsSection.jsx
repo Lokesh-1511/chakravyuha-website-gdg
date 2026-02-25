@@ -262,12 +262,6 @@ const ClubsSection = () => {
   }, []);
 
   const handleClubClick = (club) => {
-    const clubWebsiteUrl = getClubWebsiteUrl(club);
-    if (clubWebsiteUrl) {
-      window.location.assign(clubWebsiteUrl);
-      return;
-    }
-
     setSelectedClub(club);
     setModalOpen(true);
   };
@@ -451,7 +445,6 @@ const ClubsSection = () => {
             <>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
                 {clubsWithEvents.map((club, index) => {
-                  const clubWebsiteUrl = getClubWebsiteUrl(club);
                   return (
                     <motion.div
                       key={club.clubId}
@@ -482,7 +475,7 @@ const ClubsSection = () => {
                             {club.clubTagline}
                           </p>
                           <span className="mt-3 px-3 py-1 text-xs text-purple-300 bg-purple-500/20 rounded-full">
-                            {clubWebsiteUrl ? 'Visit Website' : 'View Events'}
+                            View Events
                           </span>
                         </div>
                       </GlassCard>
@@ -957,6 +950,7 @@ const ClubsSection = () => {
       {/* Club Modal */}
       <ClubModal
         club={selectedClub}
+        clubWebsiteUrl={getClubWebsiteUrl(selectedClub)}
         isOpen={modalOpen}
         onClose={closeModal}
         events={events}

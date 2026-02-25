@@ -188,7 +188,7 @@ const EventCard = ({ event }) => {
   );
 };
 
-const ClubModal = ({ club, isOpen, onClose, events, eventsLoading, eventsError, onRetryEvents }) => {
+const ClubModal = ({ club, clubWebsiteUrl = '', isOpen, onClose, events, eventsLoading, eventsError, onRetryEvents }) => {
   const [activeCategory, setActiveCategory] = useState(null);
 
   const communityEvents = useMemo(
@@ -266,16 +266,31 @@ const ClubModal = ({ club, isOpen, onClose, events, eventsLoading, eventsError, 
             </button>
 
             <div className="relative p-6 pb-4 border-b border-white/10">
-              <div className="flex items-center gap-4">
-                <img
-                  src={club.clubImage || '/chakravyuha-logo.png'}
-                  alt={club.clubName}
-                  className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl object-contain bg-white/10 p-2 shrink-0"
-                />
-                <div>
-                  <h2 className="font-audiowide text-2xl text-white">{club.clubName}</h2>
-                  <p className="text-purple-400 text-sm mt-1">{club.clubTagline || 'Community Events'}</p>
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 pr-12">
+                <div className="flex items-center gap-4 min-w-0">
+                  <img
+                    src={club.clubImage || '/chakravyuha-logo.png'}
+                    alt={club.clubName}
+                    className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl object-contain bg-white/10 p-2 shrink-0"
+                  />
+                  <div className="min-w-0">
+                    <h2 className="font-audiowide text-2xl text-white">{club.clubName}</h2>
+                    <p className="text-purple-400 text-sm mt-1">{club.clubTagline || 'Community Events'}</p>
+                  </div>
                 </div>
+
+                {clubWebsiteUrl && (
+                  <a
+                    href={clubWebsiteUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-3 py-2 rounded-full border border-purple-400/50 bg-purple-500/20 text-xs sm:text-sm text-white hover:bg-purple-500/30 transition-colors self-start"
+                    data-testid="club-modal-website-btn"
+                  >
+                    Visit Website
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                )}
               </div>
               <p className="mt-4 text-gray-400 text-sm leading-relaxed">
                 {club.clubDescription || 'Explore events from this community.'}
