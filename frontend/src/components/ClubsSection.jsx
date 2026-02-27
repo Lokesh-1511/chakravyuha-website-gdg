@@ -3,12 +3,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import AnimatedSection from './AnimatedSection';
 import GlassCard from './GlassCard';
 import ClubModal from './ClubModal';
-import { Search, X, ChevronDown, Calendar, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
+import { Search, X, ChevronDown, Calendar, ChevronLeft, ChevronRight, ExternalLink, MoveHorizontal } from 'lucide-react';
 import ParsedDescription from '../utils/parsedDescription';
 
 const CLUBS_API_URL = 'https://pdamit.in/api/persohub/clubs';
 const EVENTS_API_URL = 'https://pdamit.in/api/persohub/chakravyuha-26/events';
 const EVENTS_PER_PAGE = 6;
+const BROCHURE_PAGE_COUNT = 24;
+const BROCHURE_PREFIX = '/brochure/CHAKRAVYUHA’26_EVENT_Brochure_compressed_page-';
 
 function formatDate(dateStr) {
   if (!dateStr) return '';
@@ -188,6 +190,24 @@ const ClubsSection = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [openFilterMenu, setOpenFilterMenu] = useState(null);
   const [posterLightbox, setPosterLightbox] = useState(null);
+  const [activeBrochureSlide, setActiveBrochureSlide] = useState(0);
+
+  const brochureImages = useMemo(
+    () =>
+      Array.from(
+        { length: BROCHURE_PAGE_COUNT },
+        (_, idx) => `${BROCHURE_PREFIX}${String(idx + 1).padStart(4, '0')}.jpg`
+      ),
+    []
+  );
+
+  const handleBrochureNext = useCallback(() => {
+    setActiveBrochureSlide((prev) => (prev + 1) % brochureImages.length);
+  }, [brochureImages.length]);
+
+  const handleBrochurePrev = useCallback(() => {
+    setActiveBrochureSlide((prev) => (prev - 1 + brochureImages.length) % brochureImages.length);
+  }, [brochureImages.length]);
 
   const fetchClubs = useCallback(async () => {
     setLoading(true);
@@ -401,6 +421,85 @@ const ClubsSection = () => {
     <>
       <AnimatedSection id="clubs" className="py-20 md:py-32">
         <div className="container-custom">
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="mb-8 md:mb-10 rounded-2xl border border-purple-400/30 bg-gradient-to-br from-[#110c1f] via-[#0d0d16] to-[#090911] p-3 md:p-4 shadow-[0_18px_50px_rgba(123,58,237,0.16)]"
+            data-testid="brochure-slider"
+          >
+            <div className="flex items-center justify-between gap-3 px-1 pb-3">
+              <div className="min-w-0">
+                <p className="text-xs md:text-sm text-purple-300 uppercase tracking-[0.14em]">Event Brochure</p>
+                <p className="text-[11px] md:text-xs text-gray-400 mt-1">Swipe through pages to preview events</p>
+              </div>
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-purple-400/40 bg-purple-500/10 px-2.5 py-1 text-[11px] text-purple-200 shrink-0">
+                <MoveHorizontal className="w-3.5 h-3.5" />
+                Swipe
+              </span>
+            </div>
+
+            <div className="relative">
+              <div className="overflow-hidden rounded-xl border border-white/10 bg-black/30">
+                <motion.div
+                  className="flex"
+                  animate={{ x: `-${activeBrochureSlide * 100}%` }}
+                  transition={{ type: 'spring', stiffness: 240, damping: 32 }}
+                  drag="x"
+                  dragConstraints={{ left: 0, right: 0 }}
+                  onDragEnd={(_, info) => {
+                    if (info.offset.x < -60) {
+                      handleBrochureNext();
+                    } else if (info.offset.x > 60) {
+                      handleBrochurePrev();
+                    }
+                  }}
+                >
+                  {brochureImages.map((image, idx) => (
+                    <div key={image} className="w-full shrink-0 p-2 sm:p-3">
+                      <img
+                        src={image}
+                        alt={`Chakravyuha brochure page ${idx + 1}`}
+                        className="w-full h-full max-h-[58vh] object-contain rounded-lg border border-white/10 bg-black/35"
+                        loading={idx <= 1 ? 'eager' : 'lazy'}
+                      />
+                    </div>
+                  ))}
+                </motion.div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleBrochurePrev}
+                className="absolute inset-y-0 left-0 z-10 w-1/2"
+                aria-label="Previous brochure page"
+                data-testid="brochure-prev-half"
+              />
+              <button
+                type="button"
+                onClick={handleBrochureNext}
+                className="absolute inset-y-0 right-0 z-10 w-1/2"
+                aria-label="Next brochure page"
+                data-testid="brochure-next-half"
+              />
+            </div>
+
+            <div className="mt-3 flex items-center justify-center gap-1.5 overflow-x-auto">
+              {brochureImages.map((image, idx) => (
+                <button
+                  key={`brochure-dot-${image}`}
+                  type="button"
+                  onClick={() => setActiveBrochureSlide(idx)}
+                  className={`h-2 rounded-full transition-all ${
+                    activeBrochureSlide === idx ? 'w-6 bg-purple-300' : 'w-2 bg-white/30 hover:bg-white/50'
+                  }`}
+                  aria-label={`Go to brochure page ${idx + 1}`}
+                  data-testid={`brochure-dot-${idx + 1}`}
+                />
+              ))}
+            </div>
+          </motion.div>
+
           <h2 className="section-title" data-testid="clubs-title">OUR CLUBS</h2>
           <p className="section-subtitle">Explore our diverse community of tech enthusiasts</p>
 
